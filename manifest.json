@@ -7,35 +7,40 @@
         "name": "Options",
         "options": [
           {
-            "id": "farmDragon",
+            "id": "explorarMapa",
             "type": "boolean",
-            "label": "Should the bot farm the dragon?",
+            "label": "Deberia el bot explorar el mapa?",
             "default": true
           },
           {
-            "id": "dragon",
-            "type": "choice",
-            "label": "Wich dragon to farm",
-            "default": "green",
-            "choices": {
-              "Green Dragon": "green",
-              "Black Dragon": "black",
-              "Red Dragon": "red",
-              "Sin": "sin",
-              "Legendary Dragon": "legendary",
-              "Bone Dragon": "bone"
-            }
+            "id": "usarTrabajador",
+            "type": "boolean",
+            "label": "Deberia el bot usar los trabajadores?",
+            "default": false
           },
           {
-            "id": "sellLoot",
-            "type": "choice",
-            "label": "What should the bot do with the loot?",
-            "default": "inventory",
-            "choices": {
-              "sell for money": "money",
-              "sell for mats": "mat",
-              "put in inventory": "inventory"
-            }
+            "id": "investigarTecnologia",
+            "type": "boolean",
+            "label": "Deberia el bot investigar tecnologia?",
+            "default": false
+          },
+          {
+            "id": "entrenarTropas",
+            "type": "boolean",
+            "label": "Deberia el bot entrenar tropas?",
+            "default": false
+          },
+          {
+            "id": "usarTropas",
+            "type": "boolean",
+            "label": "Deberia el bot usar las tropas?",
+            "default": false
+          },
+          {
+            "id": "ayudarClan",
+            "type": "boolean",
+            "label": "Deberia el bot ayudar al clan?",
+            "default": true
           }
         ]
       },

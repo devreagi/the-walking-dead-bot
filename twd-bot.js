@@ -1,41 +1,62 @@
-const appPackage = "com.elex.twdsaw.gp";
+const magenta = new Color('magenta');
+const irBtn = "templates/btns/btn_ir.png";
+const explorarBtn = "templates/btns/btn_explorar.png";
+const mapaGlobalBtn = "templates/state/mapa-global.png";
+const entrenarBtn = "templates/btns/btn_entrenar.png";
+const ayudaBtn = "templates/btns/btn_ayuda.png";
+const mejorarBtn = "templates/btns/btn_mejorar.png";
+const mejorarBtnDos = "templates/btns/btn_mejorar_dos.png";
+const faltaRecursoBtn = "templates/btns/btn_falta_recurso.png";
 
+
+// Puntos resolution 720 x 1280
+const pointAyuda = new Point(667, 979);
+const pointMiniMapa = new Point(69, 1201);
+const pointCampamentoUno = new Point(296, 138);//
+const pointCampamentoDos = new Point(365, 138);//
+const pointCampamentoTres = new Point(433, 138);//
+const pointSalir = new Point(29, 67);//
+
+var usarTrabajador = Config.getValue("usarTrabajador");
+var toTest = {
+    trabajadorBtn: {
+        tmplt: "templates/btns/btn_trabajador_libre.png",
+        score: 0.96
+    },
+    investigacionBtn: {
+        tmplt: "templates/btns/btn_investigacion_libre.png",
+        score: 0.96
+    },
+    entrenamientobtn: {
+        tmplt: "templates/btns/btn_entrenamiento_libre.png",
+        score: 0.96
+    },
+    tropasBtn: {
+        tmplt: "templates/btns/btn_tropa_libre.png",
+        score: 0.96
+    },
+    exploracionBtn: {
+        tmplt: "templates/btns/btn_explorador_libre.png",
+        score: 0.95
+    }
+}
 
 /**
  * Verifica que exista un dispositivo conectado por ADB
  */
-if (Android.connected()) {
+try {
+    Android.connected()
     Helper.log("Dispositivo encontrado, intentando iniciar el bot...");
-    try {
-        mapaDistrito();
-    } catch (e) {
-        Helper.log("Error al inciar el bot: " + e);
-    }
-} else {
-    Helper.log("Ningun dispositivo conectado!");
-}
-
-/**
- * Verifica si el juego esta instalado
- * y lo inicia
- */
-function inicarJuego() {
-    Helper.log("Verificando si el juego está instalado...");
-    Helper.log("Intentando iniciar el juego...");
-    try {
-        Android.startApp(appPackage);
-        Helper.log("Juego iniciado, por favor espere");
-    } catch (e) {
-        Helper.log("Error al inciar el juego: " + e);
-    }
+    main();
+} catch (e) {
+    Helper.log("Error al inciar el bot: " + e);
 }
 
 /**
  * Funcion principal
  */
-function mapaDistrito() {
+function main() {
     Helper.log("Bienvenido a The Walking Dead Survivors Bot v1");
-    inicarJuego();
     gameLoop();
 }
 
@@ -49,65 +70,253 @@ function gameLoop() {
         //Get Size:
         const size = Android.getSize();
         Helper.log(size);
-        //Take Screenshot:
         const scrn = Android.takeScreenshot();
-        //get matches to determine state:
-        const results = matches(scrn);
-        const state = detectState(results);
-        Helper.log("Estado determinado: " + state);
-        //act on detected state:
-        if (stateAction(state, results)) {
-            Helper.log("Ciclo actual finalizado!");
+        const results = matchesAll(scrn);
+        //ayuda al clan
+        ayudarClan();
+        //Explora mapa
+        if (Config.getValue("explorarMapa") && typeof (results.exploracionBtn) == "object" && Object.keys(results.exploracionBtn).length > 0) {
+            explorarMapa(results);
         } else {
-            if (lastActionResult) {
-                Helper.log("Se encontró un problema, intentando de nuevo!");
-            } else {
-                Helper.log("Se encontró un problema al realizar la acción!");
-                return 1;
-            }
+            Helper.log("Uso de exploradores OFF/Exploradores ocupados");
         }
+        //ayuda al clan
+        ayudarClan();
+        //entrena tropas
+        if (Config.getValue("entrenarTropas") && typeof (results.entrenamientobtn) == "object" && Object.keys(results.entrenamientobtn).length > 0) {
+            entrenartropas(results);
+        } else {
+            Helper.log("entrenar tropas OFF/Campamentos ocupados");
+        }
+        //ayuda al clan
+        ayudarClan();
+        // Mejorar edificios
+        if (usarTrabajador && typeof (results.trabajadorBtn) == "object" && Object.keys(results.trabajadorBtn).length > 0) {
+            usarTrabajadores(results);
+        } else {
+            Helper.log("usar trabajadores OFF/trabajadores ocupados");
+        }
+        Helper.log("Ninguna accion a realizar, intentando de nuevo");
+        Android.sendTap(pointMiniMapa);
+        Helper.msleep(500);
+        Android.sendTap(pointMiniMapa);
     }
 }
 
-/**
- * Encuientra coincidencias
- * @param scrn
- * @returns {{}}
- */
-function matches(scrn) {
-    //Copy scrn:
-    /*if(Config.getValue("prntMatches")) {
-        scrn.save("scrnmatches.png");
-        var scrnmatches = new Image
-        scrnmatches.load("scrnmatches.png");
-    }*/
-    //test:
-    const toTest = {
-        //states
-        mapaDistrito: {
-            tmplt: "templates/state/mapaDistrito.png",
-            score: 0.99
-        },
-        booting: {
-            tmplt: "templates/state/loadScreen.png",
-            score: 0.99
-        },
-        //buttons
-        dailyEvent: {
-            tmplt: "templates/btns/btn_closeEvent.png",
-            score: 0.99
-        },
-        eventCloseBtn: {
-            tmplt: "templates/btns/btn_closeEvent.png",
-            score: 0.99
+function explorarMapa(results) {
+    Helper.log("Explorar mapa...");
+    AndroidRandomTap(results.exploracionBtn[0]);
+    Helper.sleep(1);
+    botonIr();
+    Helper.sleep(3);
+    botonExplorar();
+    Android.sendTap(pointMiniMapa);
+    Helper.msleep(500);
+}
+
+function entrenartropas(results) {
+    Helper.log("Entrenar tropas...");
+    AndroidRandomTap(results.entrenamientobtn[0]);
+    Helper.msleep(500);
+    botonIr();
+    Helper.msleep(500);//wait ms
+
+    //Verifica campamento 1
+    Android.sendTap(pointCampamentoUno)
+    Helper.log("llendo al campamento uno...");
+    if (botonEntrenar()) {
+        Helper.log("Entrenamiento 1");
+    } else {
+        Android.sendTap(pointCampamentoDos)
+        Helper.log("llendo al campamento dos...");
+    }
+
+    //Verifica campamento 2
+    Android.sendTap(pointCampamentoDos)
+    Helper.log("llendo al campamento dos...");
+    if (botonEntrenar()) {
+        Helper.log("Entrenamiento 2");
+    } else {
+        Android.sendTap(pointCampamentoTres)
+        Helper.log("llendo al campamento tres...");
+    }
+
+    //Verifica campamento 3
+    Android.sendTap(pointCampamentoTres)
+    Helper.log("llendo al campamento tres...");
+    if (botonEntrenar()) {
+        Helper.log("Entrenamiento 3");
+    } else {
+        Android.sendTap(pointSalir)
+        Helper.log("Entrenamiento terminado, saliendo...");
+
+    }
+    Helper.msleep(500);
+}
+
+function usarTrabajadores(results) {
+    Helper.log("Usar Trabajador...");
+    AndroidRandomTap(results.trabajadorBtn[0]);
+    Helper.msleep(200);
+    botonAyuda();
+    Helper.msleep(200);
+    botonIr();
+    Helper.sleep(1);
+    botonMejorarEdificio();
+    Helper.msleep(200);
+    if (!faltaRecurso()) {
+        botonMejorar();
+        Helper.log("Mejorando edificio...");
+    } else {
+        Android.sendTap(pointSalir);
+        Helper.log("No se puede mejorar");
+        usarTrabajador = false;
+    }
+    Helper.msleep(500);
+}
+
+function ayudarClan() {
+    if (Android.sendTap(pointAyuda)) {
+        Helper.log("Ayudando...");
+    } else {
+        Helper.log("Nadie a quien ayudar");
+    }
+}
+
+function botonIr() {
+    Helper.log("tomando screenshot");
+    const scrnBtn = Android.takeScreenshot();
+    const score = 0.98;
+    const botonIr = matches(scrnBtn, irBtn, score);
+    if (botonIr.length > 0) {
+        Helper.log("Clic en boton IR...");
+        AndroidRandomTap(botonIr[0]);
+    } else {
+        Helper.log("Exploradores ocupados");
+    }
+}
+
+function botonEntrenar() {
+    Helper.log("tomando screenshot");
+    const scrnBtn = Android.takeScreenshot();
+    const score = 0.99;
+    const botonEntrenar = matches(scrnBtn, entrenarBtn, score);
+    if (botonEntrenar.length > 0) {
+        AndroidRandomTap(botonEntrenar[0]);
+        Helper.log("Clic en boton Entrenar...");
+    } else {
+        Helper.log("Ya en entrenamiento");
+    }
+}
+
+function botonExplorar() {
+    Helper.log("tomando screenshot");
+    const scrn = Android.takeScreenshot();
+    const score = 0.96;
+    const botonExplorar = matches(scrn, explorarBtn, score);
+    if (botonExplorar.length > 0) {
+        Helper.log("Clic en boton EXPLORAR...");
+        AndroidRandomTap(botonExplorar[0]);
+    } else {
+        Helper.log("Mapa no ha cargado");
+    }
+}
+
+function botonMejorar() {
+    Helper.log("tomando screenshot");
+    const scrn = Android.takeScreenshot();
+    const score = 0.99;
+    const botonMejorar = matches(scrn, mejorarBtn, score);
+    if (botonMejorar.length > 0) {
+        Helper.log("Clic en boton MEJORAR...");
+        AndroidRandomTap(botonMejorar[0]);
+    } else {
+        Helper.log("No se puede mejorar");
+    }
+}
+
+function botonMejorarEdificio() {
+    Helper.log("tomando screenshot");
+    const scrn = Android.takeScreenshot();
+    const score = 0.99;
+    const botonMejorarDos = matches(scrn, mejorarBtnDos, score);
+    if (botonMejorarDos.length > 0) {
+        Helper.log("Clic en boton MEJORAR EDIFICIO...");
+        AndroidRandomTap(botonMejorarDos[0]);
+    } else {
+        Helper.log("No se encontró MEJORAR EDIFICIO");
+    }
+}
+
+function botonAyuda() {
+    Helper.log("tomando screenshot");
+    const scrn = Android.takeScreenshot();
+    const score = 0.99;
+    const botonAyuda = matches(scrn, ayudaBtn, score);
+    if (botonAyuda.length > 0) {
+        for (var i = 0; i < botonAyuda.length; i++) {
+            Helper.log("Clic en boton AYUDA...");
+            AndroidRandomTap(botonAyuda[i]);
         }
-    };
-    const allmatches = [];
+    } else {
+        Helper.log("No hay que pedir ayuda");
+    }
+}
+
+function faltaRecurso() {
+    Helper.log("tomando screenshot");
+    const scrn = Android.takeScreenshot();
+    const score = 0.99;
+    const botonFaltaRecurso = matches(scrn, faltaRecursoBtn, score);
+    if (botonFaltaRecurso.length > 0) {
+        Helper.log("Faltan recursos");
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function botonIrDistrito() {
+    Helper.log("tomando screenshot");
+    const scrn = Android.takeScreenshot();
+    const score = 0.99;
+    const botonMapaGlobal = matches(scrn, mapaGlobalBtn, score);
+    if (botonMapaGlobal.length > 0) {
+        Helper.log("llendo al distritoL...");
+        AndroidRandomTap(botonMapaGlobal[0]);
+        return false;
+    } else {
+        Helper.log("En mapa del distrito");
+        return true;
+    }
+}
+
+function matches(scrn, tmplt, score) {
+    //get matches to determine state:
+    Helper.log("Comparando screenshot actual con " + tmplt + " Min Score: " + score);
+    const template = new Image(tmplt);
+    const matches = Vision.findMatches(scrn, template, score);
+    //Set results
+    var allMatches = [];
+    if (matches.length > 0) {
+        allMatches = allMatches.concat(matches);
+    }
+    Helper.log(matches.length + " Resultados encontrados para: " + tmplt);
+    Helper.log(allMatches.length + " Coincidencias para la búsqueda actual.");
+    if (Config.getValue("prntMatches")) {
+        scrnmatches = Vision.markMatches(scrn, allMatches, magenta, 4);
+        scrnmatches.save("scrnmatches.png");
+    }
+    return matches;
+}
+
+function matchesAll(scrn) {
+    var allmatches = [];
     const results = {};
     //run checks:
     Object.keys(toTest).forEach(function (key) {
         const vals = toTest[key];
-        Helper.log("Comparando screenshot actual con " + vals.tmplt + " Min Score: " + vals.score);
+        Helper.log("Comparing current screenshot with " + vals.tmplt + " Min Score: " + vals.score);
         //Try to find matches
         const template = new Image(vals.tmplt);
         const matches = Vision.findMatches(scrn, template, vals.score);
@@ -119,172 +328,15 @@ function matches(scrn) {
     });
     Object.keys(results).forEach(function (key) {
         const vals = results[key];
-        Helper.log(Object.keys(vals).length + " Resultados encontrados para: " + key);
+        Helper.log(Object.keys(vals).length + " Results found for " + key);
     });
-    Helper.log(allmatches.length + " Coincidencias para varios checks found.");
+    Helper.log(allmatches.length + " Matches for various checks found.");
     if (Config.getValue("prntMatches")) {
         scrnmatches = Vision.markMatches(scrn, allmatches, magenta, 4);
         scrnmatches.save("scrnmatches.png");
     }
     return results;
 }
-
-/**
- * Detecta el estado del juego
- * @param results
- * @returns {string}
- */
-function detectState(results) {
-    const resultKeys = Object.keys(results);
-    Helper.log("Intentando determinar el estado para los siguientes: " + resultKeys);
-    //check if game is still booting:
-    if (typeof (results.booting) == "object" && Object.keys(results.booting).length > 0) {
-        Helper.log("Detectado: El juego está cargando!");
-        return "booting";
-    }
-    //Check overlays
-    if (typeof (results.dailyEvent) == "object" && Object.keys(results.dailyEvent).length > 0) {
-        Helper.log("Detectado: Evento Diario!");
-        return "dailyEvent";
-    }
-    if (typeof (results.bossSelection) == "object" && Object.keys(results.bossSelection).length > 0) {
-        Helper.log("Detectado: Boss Selection Screen");
-        if (typeof (results.confirmBossBattleBtn) == "object" && Object.keys(results.confirmBossBattleBtn).length > 0) {
-            return "bossBattleConfirmation";
-        }
-        return "bossSelection";
-    }
-    if ((typeof (results.bossLootScreen) == "object" && Object.keys(results.bossLootScreen).length > 0) ||
-        (typeof (results.bossLootSellMatBtn) == "object" && Object.keys(results.bossLootSellMatBtn) > 0) ||
-        (typeof (results.bossLootSellMoneyBtn) == "object" && Object.keys(results.bossLootSellMoneyBtn) > 0) ||
-        (typeof (results.bossLootGetBtn) == "object" && Object.keys(results.bossLootGetBtn) > 0)) {
-        Helper.log("Detectado: Boss Loot Screen");
-        return "bossLootScreen";
-    }
-    if (typeof (results.bossTreasure) == "object" && Object.keys(results.bossTreasure).length > 0) {
-        Helper.log("Detectado: Boss Treasure screen. nothing to do here but wait.");
-        return "bossTreasureScreen";
-    }
-    //check if main screen:
-    if (typeof (results.mapaDistrito) == "object" && Object.keys(results.mapaDistrito).length > 0) {
-        Helper.log("Detectado: Mapa del distrito");
-        return "mapaDistrito";
-    }
-    return "unknown";
-}
-
-/**
- * Actua de acuerdo al estado y el resultado
- * @param state
- * @param results
- * @returns {boolean|*}
- */
-function stateAction(state, results) {
-    if (state == "unknown") {
-        Helper.log("El juego tiene un estado",state,"esperando otro ciclo.");
-        return true;
-    }
-    if (state == "booting") {
-        Helper.log("Game is still booting, waiting!");
-        return true;
-    }
-    if (state == "dailyEvent") {
-        //check if closebtn was detected
-        if (typeof (results.eventCloseBtn) == "object" && Object.keys(results.eventCloseBtn).length > 0) {
-            //Click the closebtn:
-            return AndroidRandomTap(results.eventCloseBtn[0]);
-        }
-        return false;
-    }
-    if (state == "bossSelection") {
-        if (Config.getValue("farmDragon")) {
-            //start specified dragon:
-            var drgn = Config.getValue("dragon");
-            switch (drgn) {
-                case "green":
-                    AndroidRandomTap(results.greenDragonBtn[0]);
-                    break;
-                case "black":
-                    AndroidRandomTap(results.blackDragonBtn[0]);
-                    break;
-                case "red":
-                    AndroidRandomTap(results.redDragonBtn[0]);
-                    break;
-                case "sin":
-                    AndroidRandomTap(results.sinDragonBtn[0]);
-                    break;
-                case "legendary":
-                    AndroidRandomTap(results.legendaryDragonBtn[0]);
-                    break;
-                case "bone":
-                    AndroidRandomTap(results.boneDragonBtn[0]);
-                    break;
-                default:
-                    AndroidRandomTap(results.greenDragonBtn[0]);
-                    break;
-            }
-            return true;
-        } else {
-            //close boss screen:
-            Helper.log("Boss Selection screen detected, farming is not activated, closing.");
-            return AndroidBottomRightTap(results.bossSelection[0]);
-        }
-    }
-    if (state == "bossBattleConfirmation") {
-        if (Config.getValue("farmDragon")) {
-            //start specified dragon:
-            return AndroidRandomTap(results.confirmBossBattleBtn[0]);
-        }
-        Helper.log("Boss Selection screen detected, boss farming is not activated! Closing boss Selection screen...");
-        return AndroidBottomRightTap(results.bossSelection[0]);
-    }
-    if (state == "bossTreasureScreen") {
-        Helper.log("Waiting for Treasure screen to go.");
-        Helper.sleep(2);
-        return true;
-    }
-    if (state == "bossLootScreen") {
-        //get what to do with the loot:
-        var wtd = Config.getValue("sellLoot");
-        switch (wtd) {
-            case "money":
-                Helper.log("selling loot for money.");
-                AndroidRandomTap(results.bossLootSellMoneyBtn[0]);
-                Helper.sleep(1);
-                AndroidRandomTap(results.bossLootSellMoneyBtn[0]);
-                break;
-            case "mat":
-                Helper.log("selling loot for mats.");
-                AndroidRandomTap(results.bossLootSellMatBtn[0]);
-                Helper.sleep(1);
-                AndroidRandomTap(results.bossLootSellMatBtn[0]);
-                break;
-            case "inventory":
-            default:
-                Helper.log("getting loot in inventory.");
-                AndroidRandomTap(results.bossLootGetBtn[0]);
-                Helper.sleep(1);
-                AndroidRandomTap(results.bossLootGetBtn[0]);
-                break;
-        }
-        return true;
-    }
-    if (state == "mapaDistrito") {
-        if (Config.getValue("farmDragon")) {
-            //try to start bossfight:
-            if (typeof (results.dragonStatueBtn) == "object" && Object.keys(results.dragonStatueBtn).length > 0) {
-                //dragonstatue button was detected, tap.
-                return AndroidRandomTap(results.dragonStatueBtn[0]);
-            }
-        } else {
-            Helper.log("Bot has nothing to do! stopping");
-            return false;
-        }
-        return false;
-    }
-    return false;
-}
-
 
 function AndroidRandomTap(match) {
     if (Android.sendTap(match.getRect().randomPoint())) {
